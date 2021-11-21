@@ -16,7 +16,7 @@ const AllCostumers = () => {
   }, []);
 
   const getUsers = () => {
-    axios.get("http://localhost:5000/api/bank/").then((res) => {
+    axios.get("/api/bank/").then((res) => {
       
       setCostumers(res.data);
     });
