@@ -33,27 +33,7 @@ const BankingButtons = ({accountNumber}) => {
             catch (e){
                alert(`account ${accountNumber} dose not have enough balance`)
             }
-        // axios.put(`http://localhost:5000/:${accountNumber}`,amount)
-        // .then((res)=>{
-        //     if(res.status ===200){
-              
-        //         // setItem({
-        //         //     ...item,
-        //         //     name:editItem.name,
-        //         //     price:editItem.price
-        //         // })
-        //     }
-        //     else {
-        //         alert("Something went wrong")
-        //     }
-        // })
     }
-
-  
-      
-
-
-
 
     return (
         <div>

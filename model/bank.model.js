@@ -12,7 +12,6 @@ const bankSchema = new mongoose.Schema({
     firstDeposit:{
         type: Number,
         required:true,
-        min: 0
     },
     accountNumber: {
         type:Number,

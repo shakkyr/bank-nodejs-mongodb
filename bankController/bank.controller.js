@@ -83,56 +83,64 @@ const trackTransiction = (req,res) => {
                 let date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
                 let time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
                 let dateTime = date+' '+time;
-        //  ============================================================       
-                const {deposit,withdraw,transfer,accountNumber,toWho,fromWho} = req.body;
+        //  ============================================================    
+                        
+        
+                const {deposit,withdraw,transfer,toWho,fromWho} = req.body;
+               
                 console.log(req.body);
-                let user = BankModel.find(accountNumber, (err,data)=> {
+                BankModel.findOne({accountNumber:fromWho}, (err,user)=> {
                     if (err){
-                        res.status(404).json('user isnt exist')
-                        console.log('shadi');
+                      return  res.status(404).json('user isnt exist')
                     }
-                   
-                    return res.status(200).json(data)
-                })
-                console.log(user);
-                
+                    let cridet = -1000;
+                    let inMoney = (deposit === '' ? 0 : parseFloat(deposit))
+                    let outMoney = (withdraw === '' ? 0 : parseFloat(withdraw))
+                    let transferMoney = (transfer === '' ? 0 : parseFloat(transfer))
+                    if(outMoney > user.firstDeposit + inMoney && transferMoney > (user.firstDeposit + inMoney + cridet )  ){
+                        return res.status(400).json({error: 'no enough money'})
+                    }
+                    BankModel.findOneAndUpdate({accountNumber:fromWho}, {firstDeposit:user.firstDeposit + inMoney - outMoney - transferMoney} ,{new:true}, (err,data)=>{
+                            if(err){
+                               return console.log(err);
+                            }
+                            if(transferMoney !== 0 ) {
+                            BankModel.findOne({accountNumber:toWho}, (err,user2)=>{
+                                if(err){
+                                    console.log('user is mot exist');
+                                    return res.status(404).json('user in not hon')
+                                }
+                                BankModel.findOneAndUpdate({accountNumber:toWho},{firstDeposit:user2.firstDeposit + transferMoney} , {new:true} , (err,data)=>{
+                                    if(err){
+                                        console.log('transiction failed')
+                                    }
+                                    const trans =new Transictions({
+                                        fromWho:  parseFloat(fromWho),
+                                        transfer:  parseFloat(transfer),
+                                        toWho:  parseFloat(toWho),
+                                        transictionTime : dateTime
+                                      })
+                                
+                                      trans.save((err,data)=>{
+                                        if (err){
+                                            res.status(404).json('not a valid data')
+                                            return console.log(err);
+                                        }
+                                        res.status(200).json('data entered sucssesfully')
+                                    console.log(data);
+                                    })
+                                    return res.status(200).json(data);
+                                })
     
-                let user2 = buffer.find(usr=>{
-                    return usr.accountNumber == req.body.toWho
-                })
-    
-                if(!user) {
-                    return res.status(400).json({error: 'user is not exist'})
-                }
-                let cridet = -1000;
-                let inMoney = (deposit === '' ? 0 : parseFloat(deposit))
-                let outMoney = (withdraw === '' ? 0 : parseFloat(withdraw))
-                let transferMoney = (transfer === '' ? 0 : parseFloat(transfer))
-                if(outMoney > user.firstDeposit + inMoney && transferMoney > (user.firstDeposit + inMoney + cridet )  ){
-                    return res.status(400).json({error: 'no enough money'})
-                }
-                user.firstDeposit = user.firstDeposit + inMoney - outMoney - transferMoney
+                            } )}
+
+                    })            
                 
-                if(transferMoney != 0) {
-                    user2.firstDeposit =  user2.firstDeposit + transferMoney
-                }
+                })
+            
     
           
-            const trans =new Transictions({
-                fromWho:  parseFloat(req.body.fromWho),
-                transfer:  parseFloat(req.body.transfer),
-                toWho:  parseFloat(req.body.toWho),
-                transictionTime : dateTime
-              })
-        
-              trans.save((err,data)=>{
-                if (err){
-                    res.status(404).json('not a valid data')
-                    return console.log(err);
-                }
-                res.status(200).json('data entered sucssesfully')
-            console.log(data);
-            })
+            
         
 }
 
