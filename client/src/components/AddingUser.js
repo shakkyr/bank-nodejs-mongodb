@@ -22,7 +22,7 @@ const AddingUser = () => {
 
   const addNewCostumer = async () => {
     try {
-      await axios.post(`api/bank/api/bank`, user);
+      await axios.post(`http://localhost:${process.env.PORT}/api/bank/api/bank`, user);
       // alertMessage.innerHTML= "<span style='color:green'>Adding Account Sucseed</span>";
       // <Link to="/AllCostumers">List of Costumers</Link>
     } catch (e) {

@@ -16,7 +16,7 @@ const AllCostumers = () => {
   }, []);
 
   const getUsers = () => {
-    axios.get("/api/bank/").then((res) => {
+    axios.get(`http://localhost:${process.env.PORT}/api/bank/`).then((res) => {
       
       setCostumers(res.data);
     });
