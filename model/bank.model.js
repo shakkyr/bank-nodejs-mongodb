@@ -40,7 +40,7 @@ const transictionsSchema = new mongoose.Schema({
         type: Number
     },
     transictionTime : {
-        type : Number,
+        type : String,
     }
 
 })

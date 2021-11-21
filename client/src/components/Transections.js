@@ -12,8 +12,8 @@ const Transections = ()=> {
       return () => clearInterval(intervalId)
   }, []);
 
-  const getTranses = () => {
-    axios.get("http://localhost:5000/trans").then((res) => {
+  const getTranses =async () => {
+   await axios.get("http://localhost:5000/api/bank/trans").then((res) => {
         setTranses(res.data);
     });
   };

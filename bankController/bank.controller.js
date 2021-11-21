@@ -15,7 +15,7 @@ const getAllCostumers = (req,res) => {
 
 //! ===================== get all transes list =================
 const allTransictions = (req, res) => {
-    Transiction.Transictions.find({} , (err,data) =>{
+    Transictions.find({} , (err,data) =>{
         if(err){
             res.status(404).json('not a valid data')
             return console.log(err);
@@ -120,6 +120,7 @@ const trackTransiction = (req,res) => {
                                         toWho:  parseFloat(toWho),
                                         transictionTime : dateTime
                                       })
+                                      console.log(trans);
                                 
                                       trans.save((err,data)=>{
                                         if (err){
@@ -127,8 +128,7 @@ const trackTransiction = (req,res) => {
                                             return console.log(err);
                                         }
                                         res.status(200).json('data entered sucssesfully')
-                                    console.log(data);
-                                    })
+                                    })   
                                     return res.status(200).json(data);
                                 })
     
@@ -137,11 +137,7 @@ const trackTransiction = (req,res) => {
                     })            
                 
                 })
-            
-    
-          
-            
-        
+                    
 }
 
 
