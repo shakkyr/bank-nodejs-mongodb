@@ -26,7 +26,7 @@ const BankingButtons = ({accountNumber}) => {
     const doAcountChanges = async ()=>{
     
         try {
-            await axios.put(`http://localhost:${process.env.PORT}/api/bank/api/bank`,amount)
+            await axios.put(`/api/bank/api/bank`,amount)
            alert(`transfared money sucssesfuly in account ${accountNumber}`)
           
             }

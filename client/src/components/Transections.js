@@ -13,7 +13,7 @@ const Transections = ()=> {
   }, []);
 
   const getTranses =async () => {
-   await axios.get(`http://localhost:${process.env.PORT}/api/bank/trans`).then((res) => {
+   await axios.get("api/bank/trans").then((res) => {
         setTranses(res.data);
     });
   };
