@@ -1,0 +1,84 @@
+* {
+  padding: 0;
+  margin: 0;
+}
+
+h1 {
+  text-align: center;
+  font-size: 45px;
+  font-family: Arial, Helvetica, sans-serif;
+  color: rgb(6, 0, 32);
+  padding: 40px;
+}
+
+.list {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.list ul li {
+  list-style: none;
+  margin: 1rem;
+  text-align: center;
+}
+.list ul  {
+display: flex;
+}
+
+a {
+  text-decoration: none;
+  color: rgb(0, 0, 0);
+  font-size: 18px;
+  font-family: Arial, Helvetica, sans-serif;
+  padding: 14px 25px;
+  background-color: transparent;
+  border: 2px solid rgb(70, 93, 155);
+  border-radius: 10px;
+
+}
+
+a:hover {
+  background-color:#6CB8FF;
+  color: rgb(255, 255, 255);
+}
+
+.users__left {
+  border: 2px solid black;
+}
+
+.add__user{
+  border-top: 2px solid black;
+width: 100%;
+align-items: center;
+}
+
+/* ======== account bbttons=========== */
+
+.account__number {
+  background-color: burlywood;
+}
+.account__number:hover {
+  background-color: rgb(161, 116, 57);
+}
+
+.account__deposit {
+  background-color:green;
+}
+.account__deposit:hover {
+  background-color:rgb(108, 201, 108);
+}
+.account__withdraw {
+  background-color:tomato;
+}
+.account__withdraw:hover {
+  background-color:rgb(226, 159, 51);
+}
+.account__transfer {
+  background-color:rgb(71, 114, 255);
+}
+.account__transfer:hover {
+  background-color:rgb(207, 202, 194);
+}
+
+
