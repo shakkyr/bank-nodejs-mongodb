@@ -1,41 +1,21 @@
-const express = require("express");
-const app = express();
-const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 require("dotenv").config();
-const port = 5000;
-const cors = require("cors");
+const app = require("./app");
 
-bodyParser.urlencoded({ extended: false });
-app.use(bodyParser.json());
-app.use(cors());
+const port = process.env.PORT || 5000;
 
-app.use("/api/bank", require("./routes/bank.route"));
-
-app.get("/api/getUser", (req, res) =>
-  res.send({ username: os.userInfo().username })
-);
-
-if (process.env.NODE_ENV === "production") {
-  // Express will serve up production assets
-  app.use(express.static("client/build"));
-  // Express serve up index.html file if it doesn't recognize route
-  const path = require("path");
-  app.get("*", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "client", "build", "index.html"));
-  });
+if (!process.env.DB_URL) {
+  console.error("Missing DB_URL in .env (see .env.example)");
+  process.exit(1);
 }
 
-mongoose.connect(
-  `mongodb+srv://${process.env.DB_URL}/myBankDatabase?retryWrites=true&w=majority`,
-  { useNewUrlParser: true },
-  () => {
+mongoose
+  .connect(`mongodb+srv://${process.env.DB_URL}/myBankDatabase?retryWrites=true&w=majority`)
+  .then(() => {
     console.log("connected to db");
-  }
-);
-
-app.listen(process.env.PORT || port, () => {
-  console.log(`Server started on port ${port}`);
-});
-
-// mongodb+srv://shadi:<password>@cluster0.ksjui.mongodb.net/myBankDatabase?retryWrites=true&w=majority
+    app.listen(port, () => console.log(`Server started on port ${port}`));
+  })
+  .catch((err) => {
+    console.error("could not connect to db:", err.message);
+    process.exit(1);
+  });

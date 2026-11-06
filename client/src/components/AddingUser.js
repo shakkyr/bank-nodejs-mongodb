@@ -1,8 +1,8 @@
 import React from "react";
 import axios from "axios";
 // import { Link } from 'react-router-dom';
-const alertMessage = document.querySelector(".alertMessage");
 const AddingUser = () => {
+  const [message, setMessage] = React.useState(null);
   const [user, setUser] = React.useState({
     costumerName: "",
     id: "",
@@ -22,12 +22,10 @@ const AddingUser = () => {
 
   const addNewCostumer = async () => {
     try {
-      await axios.post(`api/bank/api/bank`, user);
-      // alertMessage.innerHTML= "<span style='color:green'>Adding Account Sucseed</span>";
-      // <Link to="/AllCostumers">List of Costumers</Link>
+      await axios.post(`/api/bank`, user);
+      setMessage({ color: "green", text: "Account added" });
     } catch (e) {
-      alertMessage.innerHTML =
-        "<span style='color:red'>Account number already exist!!!</span>";
+      setMessage({ color: "red", text: e.response?.data?.error || "Could not add account" });
     }
   };
   return (
@@ -90,7 +88,9 @@ const AddingUser = () => {
       <div>
         <input type="button" onClick={addNewCostumer} value="add" />
       </div>
-      <div className="alertMessage"></div>
+      <div className="alertMessage">
+        {message && <span style={{ color: message.color }}>{message.text}</span>}
+      </div>
     </div>
   );
 };

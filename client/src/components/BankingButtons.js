@@ -26,12 +26,12 @@ const BankingButtons = ({accountNumber}) => {
     const doAcountChanges = async ()=>{
     
         try {
-            await axios.put(`/api/bank/api/bank`,amount)
+            await axios.put(`/api/bank`,amount)
            alert(`transfared money sucssesfuly in account ${accountNumber}`)
           
             }
             catch (e){
-               alert(`account ${accountNumber} dose not have enough balance`)
+               alert(e.response?.data?.error || `transaction failed for account ${accountNumber}`)
             }
     }
 
