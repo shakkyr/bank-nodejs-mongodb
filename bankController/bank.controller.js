@@ -1,152 +1,155 @@
-const BankModel = require('../model/bank.model').BankModel;
-const Transictions = require('../model/bank.model').Transictions;
+const { BankModel, Transictions } = require('../model/bank.model');
 
+// Customers may go this far below zero (overdraft limit).
+const CREDIT_LIMIT = 1000;
 
-//! ===================== get all costumers List =================
-const getAllCostumers = (req,res) => {
-    BankModel.find({} , (err,data) =>{
-        if(err){
-           return res.status(404).json('not a valid data')
+// Turns "", undefined or null into 0, otherwise a number (NaN if not numeric).
+const toAmount = (value) => (value === '' || value === undefined || value === null ? 0 : Number(value));
 
+const isValidAmount = (n) => Number.isFinite(n) && n >= 0;
+
+//! ===================== get all customers =================
+const getAllCostumers = async (req, res) => {
+    try {
+        const customers = await BankModel.find({});
+        return res.status(200).json(customers);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'could not load customers' });
+    }
+};
+
+//! ===================== get all transactions =================
+const allTransictions = async (req, res) => {
+    try {
+        const transactions = await Transictions.find({}).sort({ _id: -1 });
+        return res.status(200).json(transactions);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'could not load transactions' });
+    }
+};
+
+//! ======================= get one customer ================
+const getOneUserData = async (req, res) => {
+    const accountNumber = Number(req.params.accountNumber);
+    if (!Number.isInteger(accountNumber)) {
+        return res.status(400).json({ error: 'account number must be a number' });
+    }
+    try {
+        const customer = await BankModel.findOne({ accountNumber });
+        if (!customer) {
+            return res.status(404).json({ error: 'user does not exist' });
         }
-        return res.status(200).json(data);
-    })
-}
+        return res.status(200).json(customer);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'could not load user' });
+    }
+};
 
-//! ===================== get all transes list =================
-const allTransictions = (req, res) => {
-    Transictions.find({} , (err,data) =>{
-        if(err){
-            res.status(404).json('not a valid data')
-            return console.log(err);
+//! ===================== add customer ==========
+const addCostumers = async (req, res) => {
+    const { costumerName, email, firstDeposit, accountNumber, id } = req.body;
+    const deposit = toAmount(firstDeposit);
+
+    if (!costumerName || !email || !id || !/^\d{6}$/.test(String(accountNumber))) {
+        return res.status(400).json({ error: 'name, email, id and a 6-digit account number are required' });
+    }
+    if (!isValidAmount(deposit)) {
+        return res.status(400).json({ error: 'first deposit must be a positive number' });
+    }
+
+    try {
+        await BankModel.create({
+            costumerName,
+            email,
+            firstDeposit: deposit,
+            accountNumber: Number(accountNumber),
+            joinedIn: new Date().toISOString(),
+            id,
+        });
+        return res.status(201).json({ message: 'customer added' });
+    } catch (err) {
+        // 11000 = MongoDB duplicate key (account number already used)
+        if (err.code === 11000) {
+            return res.status(409).json({ error: 'account number already exists' });
         }
-        return res.status(200).json(data);
-    })
-}
+        console.error(err);
+        return res.status(400).json({ error: 'invalid customer data' });
+    }
+};
 
+//! ========================= deposit / withdraw / transfer =================
+const trackTransiction = async (req, res) => {
+    const fromWho = Number(req.body.fromWho);
+    const inMoney = toAmount(req.body.deposit);
+    const outMoney = toAmount(req.body.withdraw);
+    const transferMoney = toAmount(req.body.transfer);
+    const toWho = transferMoney > 0 ? Number(req.body.toWho) : null;
 
-//! ======================= get individual user data ================
-const getOneUserData = (req, res) => {
-    const {accountNumber} = req.params;
-    console.log(accountNumber);
-    BankModel.find(accountNumber, (err,data)=> {
-        if (err){
-            res.status(404).json('user isnt exist')
-            console.log('shadi');
+    // Negative amounts would let a user pull money out of someone else's account.
+    if (![inMoney, outMoney, transferMoney].every(isValidAmount)) {
+        return res.status(400).json({ error: 'amounts must be positive numbers' });
+    }
+    if (inMoney + outMoney + transferMoney === 0) {
+        return res.status(400).json({ error: 'nothing to do' });
+    }
+    if (transferMoney > 0 && (!Number.isInteger(toWho) || toWho === fromWho)) {
+        return res.status(400).json({ error: 'a valid, different target account is required' });
+    }
+
+    try {
+        if (toWho !== null && !(await BankModel.exists({ accountNumber: toWho }))) {
+            return res.status(404).json({ error: 'target account does not exist' });
         }
-        console.log(data);
-        return res.status(200).json(data)
-    })
-}
 
+        const netChange = inMoney - outMoney - transferMoney;
+        // Atomic: only update if the balance after the change stays above the credit limit.
+        // This prevents two parallel requests from both spending the same money.
+        const updatedSender = await BankModel.findOneAndUpdate(
+            { accountNumber: fromWho, firstDeposit: { $gte: -CREDIT_LIMIT - netChange } },
+            { $inc: { firstDeposit: netChange } },
+            { new: true }
+        );
 
-//! ===================== add costumer to the data base ==========
-const addCostumers = (req,res) => {
-    const {costumerName,email,firstDeposit,accountNumber,id} = req.body
-    console.log(req.body);
-    console.log('sssss');
-
-    // if(!(costumerName && email && firstDeposit >= 0 && accountBalance >= -1000 && accountNumber.length ===6   && joinedIn)){
-    //     return res.status(400).send('missing data or invalid values ')
-    //   }
-      // ========================= time ====================
-      let today = new Date();
-      let date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
-      let time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
-      let dateTime = date+' '+time;
-//  ============================================================       
-      const bank =new BankModel({
-        costumerName : costumerName,
-        email : email,
-        firstDeposit : firstDeposit,
-        accountNumber : accountNumber,
-        joinedIn : dateTime,
-        id: id
-      })
-
-    bank.save((err,data)=>{
-        if (err){
-            res.status(404).json('not a valid data')
-            return console.log(err);
+        if (!updatedSender) {
+            const exists = await BankModel.exists({ accountNumber: fromWho });
+            return exists
+                ? res.status(400).json({ error: 'not enough money' })
+                : res.status(404).json({ error: 'user does not exist' });
         }
-        res.status(200).json('data entered sucssesfully')
-    console.log(data);
-    })
 
-}
+        if (toWho !== null) {
+            const updatedReceiver = await BankModel.findOneAndUpdate(
+                { accountNumber: toWho },
+                { $inc: { firstDeposit: transferMoney } },
+                { new: true }
+            );
+            if (!updatedReceiver) {
+                // Receiver vanished in between: give the sender their money back.
+                await BankModel.updateOne({ accountNumber: fromWho }, { $inc: { firstDeposit: transferMoney } });
+                return res.status(404).json({ error: 'target account does not exist' });
+            }
+            await Transictions.create({
+                fromWho,
+                transfer: transferMoney,
+                toWho,
+                transictionTime: new Date().toISOString(),
+            });
+        }
 
-//! ========================= transfers between users =================
-const trackTransiction = (req,res) => {
-
-    // ========================= time ====================
-                let today = new Date();
-                let date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
-                let time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
-                let dateTime = date+' '+time;
-        //  ============================================================    
-                        
-        
-                const {deposit,withdraw,transfer,toWho,fromWho} = req.body;
-               
-                console.log(req.body);
-                BankModel.findOne({accountNumber:fromWho}, (err,user)=> {
-                    if (err){
-                      return  res.status(404).json('user isnt exist')
-                    }
-                    let cridet = -1000;
-                    let inMoney = (deposit === '' ? 0 : parseFloat(deposit))
-                    let outMoney = (withdraw === '' ? 0 : parseFloat(withdraw))
-                    let transferMoney = (transfer === '' ? 0 : parseFloat(transfer))
-                    if(outMoney > user.firstDeposit + inMoney && transferMoney > (user.firstDeposit + inMoney + cridet )  ){
-                        return res.status(400).json({error: 'no enough money'})
-                    }
-                    BankModel.findOneAndUpdate({accountNumber:fromWho}, {firstDeposit:user.firstDeposit + inMoney - outMoney - transferMoney} ,{new:true}, (err,data)=>{
-                            if(err){
-                               return console.log(err);
-                            }
-                            if(transferMoney !== 0 ) {
-                            BankModel.findOne({accountNumber:toWho}, (err,user2)=>{
-                                if(err){
-                                    console.log('user is mot exist');
-                                    return res.status(404).json('user in not hon')
-                                }
-                                BankModel.findOneAndUpdate({accountNumber:toWho},{firstDeposit:user2.firstDeposit + transferMoney} , {new:true} , (err,data)=>{
-                                    if(err){
-                                        console.log('transiction failed')
-                                    }
-                                    const trans =new Transictions({
-                                        fromWho:  parseFloat(fromWho),
-                                        transfer:  parseFloat(transfer),
-                                        toWho:  parseFloat(toWho),
-                                        transictionTime : dateTime
-                                      })
-                                      console.log(trans);
-                                
-                                      trans.save((err,data)=>{
-                                        if (err){
-                                            res.status(404).json('not a valid data')
-                                            return console.log(err);
-                                        }
-                                        res.status(200).json('data entered sucssesfully')
-                                    })   
-                                    return res.status(200).json(data);
-                                })
-    
-                            } )}
-
-                    })            
-                
-                })
-                    
-}
-
-
+        return res.status(200).json(updatedSender);
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'transaction failed' });
+    }
+};
 
 module.exports = {
     getAllCostumers,
     addCostumers,
     allTransictions,
     getOneUserData,
-    trackTransiction
-
-}
+    trackTransiction,
+};

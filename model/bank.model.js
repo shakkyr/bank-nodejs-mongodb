@@ -16,8 +16,10 @@ const bankSchema = new mongoose.Schema({
     accountNumber: {
         type:Number,
         required:true,
-        minlength:6,
-        maxlength:6,
+        unique:true,
+        // minlength/maxlength only work on strings; numbers need min/max
+        min:100000,
+        max:999999,
     },
     joinedIn:{
         type: String,
